@@ -9,7 +9,7 @@ export default function Header() {
 
   const menuItems = [
     { href: '/', label: 'Início', icon: <Calculator size={20} /> },
-    { href: '/calcular', label: 'Calcular Notas', icon: <Calculator size={20} /> },
+    { href: '/Boletim', label: 'Calcular Notas', icon: <Calculator size={20} /> },
     { href: '/Login', label: 'Perfil', icon: <UserCircle size={20} /> }
   ]
 
