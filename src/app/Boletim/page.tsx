@@ -146,55 +146,58 @@ const Boletim: React.FC = () => {
         </div>
       </div>
 
-      <table className="min-w-full mt-8 table-auto text-sm">
-        <thead>
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
-              Período
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
-              Média
-            </th>
-            {useWeights && (
+      {/* Tabela Responsiva */}
+      <div className="overflow-x-auto mt-8">
+        <table className="min-w-full table-auto text-sm">
+          <thead>
+            <tr>
               <th className="px-6 py-3 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
-                Peso
+                Período
               </th>
-            )}
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-300">
-          {grades.map((grade, index) => (
-            <tr key={index}>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-700">
-                {`${evaluationPeriod.charAt(0).toUpperCase() + evaluationPeriod.slice(1)} ${index + 1}`}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                <InputField
-                  label={`Média do ${evaluationPeriod.charAt(0).toUpperCase() + evaluationPeriod.slice(1)} ${index + 1}`}
-                  value={grade}
-                  onChange={(value) => handleGradeChange(index, value)}
-                  placeholder="Digite a média"
-                />
-              </td>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
+                Média
+              </th>
               {useWeights && (
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  <InputField
-                    label={`Peso do ${evaluationPeriod.charAt(0).toUpperCase() + evaluationPeriod.slice(1)} ${index + 1}`}
-                    value={weights[index]}
-                    onChange={(value) => handleWeightChange(index, value)}
-                    placeholder="Digite o peso"
-                  />
-                </td>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
+                  Peso
+                </th>
               )}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-300">
+            {grades.map((grade, index) => (
+              <tr key={index}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-700">
+                  {`${evaluationPeriod.charAt(0).toUpperCase() + evaluationPeriod.slice(1)} ${index + 1}`}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  <InputField
+                    label={`Média do ${evaluationPeriod.charAt(0).toUpperCase() + evaluationPeriod.slice(1)} ${index + 1}`}
+                    value={grade}
+                    onChange={(value) => handleGradeChange(index, value)}
+                    placeholder="Digite a média"
+                  />
+                </td>
+                {useWeights && (
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    <InputField
+                      label={`Peso do ${evaluationPeriod.charAt(0).toUpperCase() + evaluationPeriod.slice(1)} ${index + 1}`}
+                      value={weights[index]}
+                      onChange={(value) => handleWeightChange(index, value)}
+                      placeholder="Digite o peso"
+                    />
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <div className="text-center mt-6">
         <button
           onClick={calculateAverage}
-          className="bg-blue-600 text-white rounded-lg px-6 py-3 hover:bg-blue-700 transition-all duration-200 ease-in-out transform hover:scale-110"
+          className="bg-blue-600 text-white rounded-lg px-6 py-3 hover:bg-blue-700 transition-all duration-200 ease-in-out transform hover:scale-110 w-full sm:w-auto"
         >
           Calcular Média Final
         </button>
