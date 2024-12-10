@@ -26,6 +26,7 @@ const Boletim: React.FC = () => {
   const [grades, setGrades] = useState<{ grade: string, weight: string }[]>([]);
   const [average, setAverage] = useState(0);
   const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     // Reset grades and weights when changing the evaluation period
@@ -45,36 +46,42 @@ const Boletim: React.FC = () => {
 
   // Função para atualizar as médias
   const handleGradeChange = (index: number, value: string) => {
-    const newGrades = [...grades];
-    newGrades[index].grade = value || "0"; // Definindo valor padrão como "0" se estiver vazio
-    setGrades(newGrades); // Atualiza apenas o índice específico
+    const newGrades = [...grades]; // Cria uma cópia do array grades
+    newGrades[index] = { ...newGrades[index], grade: value || "0" }; // Atualiza apenas o índice desejado
+    setGrades(newGrades); // Atualiza o estado com a cópia modificada
   };
-
-  // Função para atualizar os pesos
+  
   const handleWeightChange = (index: number, value: string) => {
-    const newGrades = [...grades];
-    newGrades[index].weight = value || "0"; // Definindo valor padrão como "0" se estiver vazio
-    setGrades(newGrades); // Atualiza apenas o índice específico
+    const newGrades = [...grades]; // Cria uma cópia do array grades
+    newGrades[index] = { ...newGrades[index], weight: value || "0" }; // Atualiza apenas o índice desejado
+    setGrades(newGrades); // Atualiza o estado com a cópia modificada
   };
-
+  
   const validateGrades = () => {
-    // Verifica se as médias estão entre 0 e 10 e se os pesos são válidos
+    setError(""); // Reseta o erro
     return grades.every(item => {
       const grade = parseFloat(item.grade);
       const weight = parseFloat(item.weight);
-      return !isNaN(grade) && grade >= 0 && grade <= 10 && !isNaN(weight) && weight >= 0;
+      if (isNaN(grade) || grade < 0 || grade > 10 || isNaN(weight) || weight <= 0) {
+        setError("As médias devem estar entre 0 e 10, e os pesos devem ser números válidos e positivos.");
+        return false;
+      }
+      return true;
     });
   };
 
   const calculateAverage = () => {
     if (!validateGrades()) {
-      alert("As médias devem estar entre 0 e 10 e os pesos devem ser números válidos.");
       return;
     }
 
     const totalWeight = grades.reduce((acc, item) => acc + parseFloat(item.weight), 0);
-    const weightedSum = grades.reduce((acc, item) => acc + parseFloat(item.grade) * parseFloat(item.weight), 0);
+    if (totalWeight === 0) {
+      setError("O total de pesos não pode ser zero.");
+      return;
+    }
 
+    const weightedSum = grades.reduce((acc, item) => acc + parseFloat(item.grade) * parseFloat(item.weight), 0);
     const avg = weightedSum / totalWeight;
     setAverage(avg);
     setStatus(avg >= 7 ? "Aprovado" : "Reprovado");
@@ -151,6 +158,11 @@ const Boletim: React.FC = () => {
           Calcular Média Final
         </button>
       </div>
+
+      {/* Exibe a mensagem de erro */}
+      {error && (
+        <p className="text-red-500 text-center mt-4">{error}</p>
+      )}
 
       {status && (
         <p
