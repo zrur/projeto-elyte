@@ -4,24 +4,17 @@ import React, { useState, useEffect } from "react";
 // Componente de InputField
 const InputField: React.FC<{
   label: string;
-  value: number | string;
+  value: string;
   onChange: (value: string) => void;
-  type?: string;
-  min?: number;
-  max?: number;
-  step?: number;
   placeholder?: string;
-}> = ({ label, value, onChange, type = "text", min, max, step, placeholder }) => (
+}> = ({ label, value, onChange, placeholder }) => (
   <div className="mb-6">
     <label htmlFor={label} className="block text-sm font-semibold text-blue-700 mb-2">{label}</label>
     <input
       id={label}
-      type={type}
+      type="text"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      min={min}
-      max={max}
-      step={step}
       className="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-md sm:text-sm border-gray-300 rounded-md px-4 py-2 transition-all duration-200 ease-in-out transform hover:scale-105"
       placeholder={placeholder}
     />
@@ -29,103 +22,83 @@ const InputField: React.FC<{
 );
 
 const Boletim: React.FC = () => {
-  const [schoolLevel, setSchoolLevel] = useState("fundamental");
-  const [equalWeights, setEqualWeights] = useState(true);
-  const [subjects, setSubjects] = useState<string[]>([]);
-  const [grades, setGrades] = useState<number[]>([]);
-  const [weights, setWeights] = useState<number[]>([]);
+  const [evaluationPeriod, setEvaluationPeriod] = useState("semestre");
+  const [grades, setGrades] = useState<{ grade: string, weight: string }[]>([]);
   const [average, setAverage] = useState(0);
   const [status, setStatus] = useState("");
 
   useEffect(() => {
-    const subjectsList = getSubjects(schoolLevel);
-    setSubjects(subjectsList);
-    initializeGradesAndWeights(subjectsList);
-  }, [schoolLevel]);
+    // Reset grades and weights when changing the evaluation period
+    const numPeriods = getNumberOfPeriods(evaluationPeriod);
+    setGrades(new Array(numPeriods).fill({ grade: "", weight: "" }));
+  }, [evaluationPeriod]);
 
-  const getSubjects = (level: string) => {
-    if (level === "fundamental") {
-      return ["Português", "História", "Geografia", "Ciências", "Matemática", "Educação Física", "Artes", "Inglês", "Espanhol", "Ensino Religioso"];
+  const getNumberOfPeriods = (period: string) => {
+    if (period === "semestre") {
+      return 2; // 2 médias por semestre
     }
-    return ["Matemática", "Português", "Física", "Química", "Biologia"];
+    if (period === "bimestre") {
+      return 4; // 4 médias por bimestre
+    }
+    return 3; // 3 médias por trimestre
   };
 
-  const initializeGradesAndWeights = (subjectsList: string[]) => {
-    setGrades(new Array(subjectsList.length).fill(0));
-    setWeights(new Array(subjectsList.length).fill(1));
+  // Função para atualizar as médias
+  const handleGradeChange = (index: number, value: string) => {
+    const newGrades = [...grades];
+    newGrades[index].grade = value || "0"; // Definindo valor padrão como "0" se estiver vazio
+    setGrades(newGrades); // Atualiza apenas o índice específico
+  };
+
+  // Função para atualizar os pesos
+  const handleWeightChange = (index: number, value: string) => {
+    const newGrades = [...grades];
+    newGrades[index].weight = value || "0"; // Definindo valor padrão como "0" se estiver vazio
+    setGrades(newGrades); // Atualiza apenas o índice específico
   };
 
   const validateGrades = () => {
-    if (grades.some((grade) => grade < 0 || grade > 10)) {
-      alert("As notas devem estar entre 0 e 10.");
-      return false;
-    }
-    if (!equalWeights && weights.some((weight) => weight <= 0)) {
-      alert("Os pesos devem ser maiores que 0.");
-      return false;
-    }
-    return true;
-  };
-
-  const validateInput = (value: string, type: string) => {
-    const numValue = parseFloat(value);
-    if (type === 'nota' && (numValue < 0 || numValue > 10)) {
-      return 'A nota deve estar entre 0 e 10';
-    }
-    if (type === 'peso' && numValue <= 0) {
-      return 'O peso deve ser maior que 0';
-    }
-    return '';
+    // Verifica se as médias estão entre 0 e 10 e se os pesos são válidos
+    return grades.every(item => {
+      const grade = parseFloat(item.grade);
+      const weight = parseFloat(item.weight);
+      return !isNaN(grade) && grade >= 0 && grade <= 10 && !isNaN(weight) && weight >= 0;
+    });
   };
 
   const calculateAverage = () => {
-    if (!validateGrades()) return;
+    if (!validateGrades()) {
+      alert("As médias devem estar entre 0 e 10 e os pesos devem ser números válidos.");
+      return;
+    }
 
-    let total = 0;
-    let totalWeights = 0;
+    const totalWeight = grades.reduce((acc, item) => acc + parseFloat(item.weight), 0);
+    const weightedSum = grades.reduce((acc, item) => acc + parseFloat(item.grade) * parseFloat(item.weight), 0);
 
-    grades.forEach((grade, index) => {
-      const weight = equalWeights ? 1 : weights[index];
-      total += grade * weight;
-      totalWeights += weight;
-    });
-
-    const avg = total / totalWeights;
+    const avg = weightedSum / totalWeight;
     setAverage(avg);
     setStatus(avg >= 7 ? "Aprovado" : "Reprovado");
   };
 
   return (
     <div className="bg-white p-8 max-w-4xl mx-auto shadow-lg rounded-xl my-8 transition-all duration-300 ease-in-out transform hover:scale-105">
-      <h1 className="text-4xl font-extrabold text-blue-600 mb-8 text-center">Calculadora de Notas</h1>
+      <h1 className="text-4xl font-extrabold text-blue-600 mb-8 text-center">Calculadora de Média</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label htmlFor="schoolLevel" className="block text-sm font-semibold text-blue-700 mb-2">Nível Escolar</label>
+          <label htmlFor="evaluationPeriod" className="block text-sm font-semibold text-blue-700 mb-2">Período de Avaliação</label>
           <select
-            id="schoolLevel"
-            value={schoolLevel}
-            onChange={(e) => setSchoolLevel(e.target.value)}
+            id="evaluationPeriod"
+            value={evaluationPeriod}
+            onChange={(e) => setEvaluationPeriod(e.target.value)}
             className="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-md sm:text-sm border-gray-300 rounded-md px-4 py-2 transition-all duration-200 ease-in-out transform hover:scale-105"
           >
-            <option value="fundamental">Fundamental</option>
-            <option value="medio">Médio</option>
+            <option value="semestre">Semestre</option>
+            <option value="bimestre">Bimestre</option>
+            <option value="trimestre">Trimestre</option>
           </select>
-          {/* Aqui você exibe o valor selecionado */}
-          <p className="mt-2 text-blue-600">Você selecionou: {schoolLevel === "fundamental" ? "Ensino Fundamental" : "Ensino Médio"}</p>
-        </div>
-
-        <div className="flex items-center mt-6 md:mt-0">
-          <input
-            id="equalWeights"
-            type="checkbox"
-            checked={equalWeights}
-            onChange={(e) => setEqualWeights(e.target.checked)}
-            className="focus:ring-blue-500 h-5 w-5 text-blue-600 border-gray-300 rounded transition-all duration-200 ease-in-out transform hover:scale-105"
-          />
-          <label htmlFor="equalWeights" className="ml-2 text-sm font-semibold text-blue-700">
-            Pesos Iguais para Todas as Disciplinas
-          </label>
+          {/* Exibe o período selecionado */}
+          <p className="mt-2 text-blue-600">Você selecionou: {evaluationPeriod}</p>
         </div>
       </div>
 
@@ -133,65 +106,38 @@ const Boletim: React.FC = () => {
         <thead>
           <tr>
             <th className="px-6 py-3 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
-              Disciplina
+              Período
             </th>
             <th className="px-6 py-3 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
-              Nota
+              Média
             </th>
-            {!equalWeights && (
-              <th className="px-6 py-3 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
-                Peso
-              </th>
-            )}
+            <th className="px-6 py-3 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
+              Peso
+            </th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-300">
-          {subjects.map((subject, index) => (
-            <tr key={subject}>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-700">{subject}</td>
+          {grades.map((item, index) => (
+            <tr key={index}>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-700">
+                {`${evaluationPeriod.charAt(0).toUpperCase() + evaluationPeriod.slice(1)} ${index + 1}`}
+              </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                 <InputField
-                  label="Nota"
-                  value={grades[index]}
-                  onChange={(value) => {
-                    const error = validateInput(value, 'nota');
-                    if (error) {
-                      alert(error); // Melhor seria exibir um erro visual
-                    } else {
-                      const newGrades = [...grades];
-                      newGrades[index] = parseFloat(value) || 0;
-                      setGrades(newGrades);
-                    }
-                  }}
-                  type="number"
-                  min={0}
-                  max={10}
-                  step={0.1}
-                  placeholder="Digite a nota"
+                  label={`Média do ${evaluationPeriod.charAt(0).toUpperCase() + evaluationPeriod.slice(1)} ${index + 1}`}
+                  value={item.grade}
+                  onChange={(value) => handleGradeChange(index, value)} // Atualiza apenas o índice correto
+                  placeholder="Digite a média"
                 />
               </td>
-              {!equalWeights && (
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  <InputField
-                    label="Peso"
-                    value={weights[index]}
-                    onChange={(value) => {
-                      const error = validateInput(value, 'peso');
-                      if (error) {
-                        alert(error); // Melhor seria exibir um erro visual
-                      } else {
-                        const newWeights = [...weights];
-                        newWeights[index] = parseFloat(value) || 1;
-                        setWeights(newWeights);
-                      }
-                    }}
-                    type="number"
-                    min={1}
-                    step={1}
-                    placeholder="Digite o peso"
-                  />
-                </td>
-              )}
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                <InputField
+                  label={`Peso do ${evaluationPeriod.charAt(0).toUpperCase() + evaluationPeriod.slice(1)} ${index + 1}`}
+                  value={item.weight}
+                  onChange={(value) => handleWeightChange(index, value)} // Atualiza apenas o índice correto
+                  placeholder="Digite o peso"
+                />
+              </td>
             </tr>
           ))}
         </tbody>
@@ -202,7 +148,7 @@ const Boletim: React.FC = () => {
           onClick={calculateAverage}
           className="bg-blue-600 text-white rounded-lg px-6 py-3 hover:bg-blue-700 transition-all duration-200 ease-in-out transform hover:scale-110"
         >
-          Calcular Média
+          Calcular Média Final
         </button>
       </div>
 
@@ -213,8 +159,8 @@ const Boletim: React.FC = () => {
           }`}
         >
           {status === "Aprovado"
-            ? `Parabéns! Você foi aprovado com média ${average.toFixed(2)}`
-            : `Infelizmente, você foi reprovado. Sua média foi ${average.toFixed(2)}.`}
+            ? `Parabéns! Você foi aprovado com média final de ${average.toFixed(2)}`
+            : `Infelizmente, você foi reprovado. Sua média final foi ${average.toFixed(2)}.`}
         </p>
       )}
     </div>

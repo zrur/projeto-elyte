@@ -24,7 +24,7 @@ export default function Home() {
       <div className="container mx-auto px-4 max-w-xl">
         <header className="text-center mb-10">
           <h1 className="text-5xl font-extrabold mb-4 drop-shadow-lg">
-            Cálculo do Boletim
+            Cálculo Escolar
           </h1>
           <p className="text-xl opacity-90">
             Simplifique sua vida escolar com nossa calculadora inteligente
