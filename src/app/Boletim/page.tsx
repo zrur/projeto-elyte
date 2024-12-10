@@ -23,15 +23,17 @@ const InputField: React.FC<{
 
 const Boletim: React.FC = () => {
   const [evaluationPeriod, setEvaluationPeriod] = useState("semestre");
-  const [grades, setGrades] = useState<{ grade: string, weight: string }[]>([]);
+  const [grades, setGrades] = useState<string[]>([]);
+  const [weights, setWeights] = useState<string[]>([]);
+  const [useWeights, setUseWeights] = useState(false);
   const [average, setAverage] = useState(0);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Reset grades and weights when changing the evaluation period
     const numPeriods = getNumberOfPeriods(evaluationPeriod);
-    setGrades(new Array(numPeriods).fill({ grade: "", weight: "" }));
+    setGrades(new Array(numPeriods).fill("")); // Inicializa o array de grades com strings vazias
+    setWeights(new Array(numPeriods).fill("")); // Inicializa o array de pesos com strings vazias, caso use pesos
   }, [evaluationPeriod]);
 
   const getNumberOfPeriods = (period: string) => {
@@ -44,47 +46,71 @@ const Boletim: React.FC = () => {
     return 3; // 3 médias por trimestre
   };
 
-  // Função para atualizar as médias
+  // Função para atualizar as notas
   const handleGradeChange = (index: number, value: string) => {
-    const newGrades = [...grades]; // Cria uma cópia do array grades
-    newGrades[index] = { ...newGrades[index], grade: value || "0" }; // Atualiza apenas o índice desejado
-    setGrades(newGrades); // Atualiza o estado com a cópia modificada
+    const newGrades = [...grades];
+    newGrades[index] = value || "0"; // Atualiza apenas o índice desejado
+    setGrades(newGrades);
   };
-  
+
+  // Função para atualizar os pesos
   const handleWeightChange = (index: number, value: string) => {
-    const newGrades = [...grades]; // Cria uma cópia do array grades
-    newGrades[index] = { ...newGrades[index], weight: value || "0" }; // Atualiza apenas o índice desejado
-    setGrades(newGrades); // Atualiza o estado com a cópia modificada
+    const newWeights = [...weights];
+    newWeights[index] = value || "0"; // Atualiza apenas o índice desejado
+    setWeights(newWeights);
   };
-  
-  const validateGrades = () => {
+
+  const validateGradesAndWeights = () => {
     setError(""); // Reseta o erro
-    return grades.every(item => {
-      const grade = parseFloat(item.grade);
-      const weight = parseFloat(item.weight);
-      if (isNaN(grade) || grade < 0 || grade > 10 || isNaN(weight) || weight <= 0) {
-        setError("As médias devem estar entre 0 e 10, e os pesos devem ser números válidos e positivos.");
+    // Validação das notas
+    const validGrades = grades.every(item => {
+      const grade = parseFloat(item);
+      if (isNaN(grade) || grade < 0 || grade > 10) {
+        setError("As médias devem estar entre 0 e 10.");
         return false;
       }
       return true;
     });
+
+    if (!validGrades) return false;
+
+    // Validação dos pesos, caso a opção de pesos esteja ativa
+    if (useWeights) {
+      const validWeights = weights.every(item => {
+        const weight = parseFloat(item);
+        if (isNaN(weight) || weight < 0) {
+          setError("Os pesos devem ser números positivos.");
+          return false;
+        }
+        return true;
+      });
+      return validWeights;
+    }
+
+    return true;
   };
 
   const calculateAverage = () => {
-    if (!validateGrades()) {
+    if (!validateGradesAndWeights()) {
       return;
     }
 
-    const totalWeight = grades.reduce((acc, item) => acc + parseFloat(item.weight), 0);
-    if (totalWeight === 0) {
-      setError("O total de pesos não pode ser zero.");
-      return;
+    if (useWeights) {
+      // Cálculo com pesos
+      const weightedSum = grades.reduce((acc, grade, index) => {
+        return acc + parseFloat(grade) * parseFloat(weights[index]);
+      }, 0);
+      const totalWeights = weights.reduce((acc, weight) => acc + parseFloat(weight), 0);
+      const avg = weightedSum / totalWeights;
+      setAverage(avg);
+    } else {
+      // Cálculo sem pesos
+      const sum = grades.reduce((acc, item) => acc + parseFloat(item), 0);
+      const avg = sum / grades.length;
+      setAverage(avg);
     }
 
-    const weightedSum = grades.reduce((acc, item) => acc + parseFloat(item.grade) * parseFloat(item.weight), 0);
-    const avg = weightedSum / totalWeight;
-    setAverage(avg);
-    setStatus(avg >= 7 ? "Aprovado" : "Reprovado");
+    setStatus(average >= 7 ? "Aprovado" : "Reprovado");
   };
 
   return (
@@ -104,8 +130,19 @@ const Boletim: React.FC = () => {
             <option value="bimestre">Bimestre</option>
             <option value="trimestre">Trimestre</option>
           </select>
-          {/* Exibe o período selecionado */}
-          <p className="mt-2 text-blue-600">Você selecionou: {evaluationPeriod}</p>
+        </div>
+
+        <div>
+          <label htmlFor="useWeights" className="block text-sm font-semibold text-blue-700 mb-2">Usar Pesos?</label>
+          <select
+            id="useWeights"
+            value={useWeights ? "sim" : "nao"}
+            onChange={(e) => setUseWeights(e.target.value === "sim")}
+            className="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-md sm:text-sm border-gray-300 rounded-md px-4 py-2 transition-all duration-200 ease-in-out transform hover:scale-105"
+          >
+            <option value="nao">Não</option>
+            <option value="sim">Sim</option>
+          </select>
         </div>
       </div>
 
@@ -118,13 +155,15 @@ const Boletim: React.FC = () => {
             <th className="px-6 py-3 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
               Média
             </th>
-            <th className="px-6 py-3 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
-              Peso
-            </th>
+            {useWeights && (
+              <th className="px-6 py-3 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
+                Peso
+              </th>
+            )}
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-300">
-          {grades.map((item, index) => (
+          {grades.map((grade, index) => (
             <tr key={index}>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-700">
                 {`${evaluationPeriod.charAt(0).toUpperCase() + evaluationPeriod.slice(1)} ${index + 1}`}
@@ -132,19 +171,21 @@ const Boletim: React.FC = () => {
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                 <InputField
                   label={`Média do ${evaluationPeriod.charAt(0).toUpperCase() + evaluationPeriod.slice(1)} ${index + 1}`}
-                  value={item.grade}
-                  onChange={(value) => handleGradeChange(index, value)} // Atualiza apenas o índice correto
+                  value={grade}
+                  onChange={(value) => handleGradeChange(index, value)}
                   placeholder="Digite a média"
                 />
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                <InputField
-                  label={`Peso do ${evaluationPeriod.charAt(0).toUpperCase() + evaluationPeriod.slice(1)} ${index + 1}`}
-                  value={item.weight}
-                  onChange={(value) => handleWeightChange(index, value)} // Atualiza apenas o índice correto
-                  placeholder="Digite o peso"
-                />
-              </td>
+              {useWeights && (
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  <InputField
+                    label={`Peso do ${evaluationPeriod.charAt(0).toUpperCase() + evaluationPeriod.slice(1)} ${index + 1}`}
+                    value={weights[index]}
+                    onChange={(value) => handleWeightChange(index, value)}
+                    placeholder="Digite o peso"
+                  />
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
